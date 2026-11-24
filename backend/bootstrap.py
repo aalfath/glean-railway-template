@@ -78,18 +78,30 @@ async def first_boot_accounts() -> None:
 
         admin_user = os.environ.get("ADMIN_USERNAME") or "admin"
         admin_pw = os.environ.get("ADMIN_PASSWORD") or ""
-        user_email = (os.environ.get("GLEAN_USER_EMAIL") or "").strip().lower()
+        user_email = (os.environ.get("GLEAN_USER_EMAIL") or "").strip()
         user_pw = os.environ.get("GLEAN_USER_PASSWORD") or ""
         if len(admin_pw) < 12:
             log("ADMIN_PASSWORD must be set (12+ characters) for the first boot")
             sys.exit(78)
+        if user_email:
+            from pydantic import validate_email
+
+            try:
+                # Same normalisation the login form's EmailStr applies.
+                user_email = validate_email(user_email)[1]
+            except Exception:  # noqa: BLE001
+                log(f"GLEAN_USER_EMAIL '{user_email}' is not a valid email address; fix the variable and redeploy")
+                sys.exit(78)
+            if len(user_pw) < 8:
+                log("GLEAN_USER_PASSWORD must be at least 8 characters")
+                sys.exit(78)
 
         await AdminService(session).create_admin_user(
             username=admin_user, password=sha256_hex(admin_pw), role=AdminRole.SUPER_ADMIN
         )
         log(f"created admin account '{admin_user}' (password: ADMIN_PASSWORD variable)")
 
-        if user_email and len(user_pw) >= 8:
+        if user_email:
             exists = await session.scalar(select(User).where(User.email == user_email))
             if not exists:
                 user = User(
