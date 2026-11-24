@@ -22,6 +22,10 @@ RUN git init -q . \
 WORKDIR /src/backend
 ENV UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=never UV_COMPILE_BYTECODE=1
 COPY prune-lock.py /tmp/prune-lock.py
+# Upstream logs every SQL statement at INFO; Railway caps logs at 500 lines/s.
+RUN sed -i 's/logging.getLogger(logger_name).setLevel(logging.INFO)/logging.getLogger(logger_name).setLevel(logging.WARNING if logger_name == "sqlalchemy" else logging.INFO)/' \
+      packages/core/glean_core/logging_config.py \
+ && grep -q 'WARNING if logger_name == "sqlalchemy"' packages/core/glean_core/logging_config.py
 RUN uv export --frozen --all-packages --no-dev --no-emit-workspace --no-hashes \
       | python /tmp/prune-lock.py uv.lock > /tmp/requirements.txt \
  && uv venv /app/.venv \
