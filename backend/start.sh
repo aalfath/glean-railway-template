@@ -8,6 +8,11 @@ set -eu
 export VECTOR_BACKEND="${VECTOR_BACKEND:-pgvector}"
 export LOG_LEVEL="${LOG_LEVEL:-INFO}"
 export DEBUG="${DEBUG:-false}"
+# MCP OAuth metadata URLs come from the Web service's public domain. If the
+# domain isn't there (yet), fall back to upstream's defaults instead of crashing.
+valid_url() { case "$1" in http://[!/]*|https://[!/]*) return 0 ;; *) return 1 ;; esac; }
+valid_url "${MCP_ISSUER_URL:-}" || unset MCP_ISSUER_URL
+valid_url "${MCP_RESOURCE_SERVER_URL:-}" || unset MCP_RESOURCE_SERVER_URL
 # Logs go to Railway's log view only (no log volume needed).
 unset LOG_FILE || true
 # Keep native thread pools at the service's CPU count, not the host's.
