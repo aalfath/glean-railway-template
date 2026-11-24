@@ -27,8 +27,7 @@ export OMP_NUM_THREADS="${OMP_NUM_THREADS:-$cpus}" OPENBLAS_NUM_THREADS="${OPENB
 case "${GLEAN_ROLE:-api}" in
   api)
     python /opt/glean/bootstrap.py
-    exec uvicorn glean_api.main:app --host :: --port "${PORT:-8000}" \
-      --proxy-headers --forwarded-allow-ips '*' --no-server-header
+    exec python /opt/glean/serve.py
     ;;
   worker)
     python /opt/glean/bootstrap.py --wait-only

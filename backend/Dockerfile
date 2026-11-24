@@ -39,7 +39,7 @@ RUN uv export --frozen --all-packages --no-dev --no-emit-workspace --no-hashes \
 FROM python:3.14.10-slim@sha256:9aaa474097d094040649f2162a627c0049b408f52138d980916788d80f04802f
 COPY --from=build /src/backend /app
 COPY --from=build /app/.venv /app/.venv
-COPY start.sh bootstrap.py /opt/glean/
+COPY start.sh bootstrap.py serve.py /opt/glean/
 RUN chmod +x /opt/glean/start.sh
 WORKDIR /app
 ENV PATH=/app/.venv/bin:$PATH \
