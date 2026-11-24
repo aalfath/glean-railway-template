@@ -21,14 +21,16 @@ RUN git init -q . \
  && test "$(git rev-parse HEAD)" = "$GLEAN_COMMIT"
 WORKDIR /src/backend
 ENV UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=never UV_COMPILE_BYTECODE=1
-RUN uv export --frozen --all-packages --no-dev --no-emit-workspace \
-      --prune torch --prune sentence-transformers -o /tmp/requirements.txt \
+COPY prune-lock.py /tmp/prune-lock.py
+RUN uv export --frozen --all-packages --no-dev --no-emit-workspace --no-hashes \
+      | python /tmp/prune-lock.py uv.lock > /tmp/requirements.txt \
  && uv venv /app/.venv \
  && VIRTUAL_ENV=/app/.venv uv pip install --no-deps -r /tmp/requirements.txt \
  && VIRTUAL_ENV=/app/.venv uv pip install --no-deps \
       ./packages/core ./packages/database ./packages/rss ./packages/vector \
       ./apps/api ./apps/worker \
- && ! /app/.venv/bin/python -c "import torch" 2>/dev/null
+ && ! /app/.venv/bin/python -c "import torch" 2>/dev/null \
+ && /app/.venv/bin/python -c "import glean_api.main, glean_worker.main"
 
 FROM python:3.14.10-slim@sha256:9aaa474097d094040649f2162a627c0049b408f52138d980916788d80f04802f
 COPY --from=build /src/backend /app
